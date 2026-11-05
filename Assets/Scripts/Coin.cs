@@ -17,7 +17,7 @@ namespace Platformer
         {
             if (counter == null)
             {
-                counter = FindFirstObjectByType<CoinCounter>();
+                counter = FindAnyObjectByType<CoinCounter>();
             }
         }
 
@@ -38,7 +38,7 @@ namespace Platformer
 
             if (counter == null)
             {
-                counter = FindFirstObjectByType<CoinCounter>();
+                counter = FindAnyObjectByType<CoinCounter>();
             }
 
             counter?.Collect();

@@ -11,6 +11,7 @@ namespace Platformer
     public sealed class CoinCounter : MonoBehaviour
     {
         [SerializeField] private Text counterLabel;
+        [SerializeField] private Portal portal;
 
         private int _total;
         private int _collected;
@@ -26,6 +27,11 @@ namespace Platformer
                 counterLabel = GetComponentInChildren<Text>(true);
             }
 
+            if (portal == null)
+            {
+                portal = FindAnyObjectByType<Portal>(FindObjectsInactive.Include);
+            }
+
             _total = FindObjectsByType<Coin>(FindObjectsInactive.Exclude).Length;
             Refresh();
         }
@@ -39,6 +45,11 @@ namespace Platformer
 
             _collected++;
             Refresh();
+
+            if (Remaining == 0)
+            {
+                portal?.Open();
+            }
         }
 
         public void Refresh()
