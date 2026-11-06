@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Platformer
@@ -13,12 +14,14 @@ namespace Platformer
     {
         private const string LogDirectoryName = "UserLogs";
         private const string LogFileName = "log.txt";
+        private const string ConfigFileName = "user_config.json";
 
         private static readonly object FileLock = new object();
 
         private static bool _initialized;
         private static bool _isWriting;
         private static string _logPath;
+        private static string _playerId;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -28,6 +31,7 @@ namespace Platformer
             _initialized = false;
             _isWriting = false;
             _logPath = null;
+            _playerId = null;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -41,7 +45,15 @@ namespace Platformer
             _initialized = true;
             Application.logMessageReceivedThreaded += OnLogMessageReceivedThreaded;
             Application.quitting += OnQuitting;
+
+            var configWarning = TryLoadPlayerId(out _playerId);
             WriteEntry("Game started.");
+
+            if (!string.IsNullOrEmpty(configWarning))
+            {
+                WriteEntry($"CONFIG WARNING: {configWarning}");
+                Debug.LogWarning($"[GameLogger] {configWarning}");
+            }
         }
 
         private static void OnQuitting()
@@ -96,7 +108,8 @@ namespace Platformer
                 try
                 {
                     var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz");
-                    var line = $"[{timestamp}] {message}{Environment.NewLine}";
+                    var playerId = string.IsNullOrEmpty(_playerId) ? "unknown" : _playerId;
+                    var line = $"[{timestamp}] [playerId={playerId}] {message}{Environment.NewLine}";
                     var path = GetLogPath();
 
                     Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -125,6 +138,42 @@ namespace Platformer
             var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             _logPath = Path.Combine(projectRoot, LogDirectoryName, LogFileName);
             return _logPath;
+        }
+
+        private static string TryLoadPlayerId(out string playerId)
+        {
+            playerId = string.Empty;
+
+            try
+            {
+                var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+                var configPath = Path.Combine(projectRoot, ConfigFileName);
+
+                if (!File.Exists(configPath))
+                {
+                    return $"{ConfigFileName} was not found at {configPath}.";
+                }
+
+                var json = File.ReadAllText(configPath);
+                var match = Regex.Match(
+                    json,
+                    @"[""']?id[""']?\s*:\s*(?:""(?<value>[^""]*)""|'(?<value>[^']*)'|(?<value>[^,\s}]+))",
+                    RegexOptions.IgnoreCase);
+
+                if (!match.Success)
+                {
+                    return $"Could not find an id value in {ConfigFileName}.";
+                }
+
+                playerId = match.Groups["value"].Value.Trim();
+                return string.IsNullOrEmpty(playerId)
+                    ? $"The id value in {ConfigFileName} is empty."
+                    : null;
+            }
+            catch (Exception exception)
+            {
+                return $"Could not read {ConfigFileName}: {exception.Message}";
+            }
         }
     }
 }
