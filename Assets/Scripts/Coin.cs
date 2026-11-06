@@ -41,7 +41,15 @@ namespace Platformer
                 counter = FindAnyObjectByType<CoinCounter>();
             }
 
-            counter?.Collect();
+            if (counter != null)
+            {
+                counter.Collect(gameObject.name);
+            }
+            else
+            {
+                GameLogger.LogCoinCollected(gameObject.name, 0, 0);
+            }
+
             gameObject.SetActive(false);
         }
     }

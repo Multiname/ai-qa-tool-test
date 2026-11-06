@@ -35,6 +35,7 @@ namespace Platformer
             }
 
             _victoryShown = true;
+            GameLogger.LogPortalEntered();
 
             if (victoryScreen != null)
             {

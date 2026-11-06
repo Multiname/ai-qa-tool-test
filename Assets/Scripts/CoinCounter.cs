@@ -36,7 +36,7 @@ namespace Platformer
             Refresh();
         }
 
-        public void Collect()
+        public void Collect(string coinName = "Coin")
         {
             if (Remaining <= 0)
             {
@@ -45,6 +45,7 @@ namespace Platformer
 
             _collected++;
             Refresh();
+            GameLogger.LogCoinCollected(coinName, _collected, Remaining);
 
             if (Remaining == 0)
             {
